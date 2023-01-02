@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 import argparse
-from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
-import os
 import logging
-from pathlib import Path
+import os
 import re
-from typing import List, Optional, Dict, Any
+import subprocess
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from org_tools import as_org, empty, DEFAULT_TEMPLATE, Config
+from org_tools import DEFAULT_TEMPLATE, Config, as_org, empty
 
 CAPTURE_PATH_VAR     = 'GRASP_CAPTURE_PATH'
+OBSIDIAN_PATH_VAR    = 'GRASP_OBSIDIAN_PATH'
 CAPTURE_TEMPLATE_VAR = 'GRASP_CAPTURE_TEMPLATE'
 CAPTURE_CONFIG_VAR   = 'GRASP_CAPTURE_CONFIG'
 
@@ -19,7 +21,7 @@ def get_logger():
     return logging.getLogger('grasp-server')
 
 
-def append_org(
+def write_org(
         path: Path,
         org: str
 ):
@@ -30,11 +32,21 @@ def append_org(
     # https://stackoverflow.com/a/13232181
     if len(org.encode('utf8')) > 4096:
         logger.warning("writing out %s might be non-atomic", org)
-    with path.open('a') as fo:
+    with path.open('w') as fo:
         fo.write(org)
 
+def move_to_obsidian_vault(org_path: Path, md_path: Path) -> None:
+    md_path.parent.mkdir(parents=True, exist_ok=True)
+    pandoc_result = subprocess.Popen(['pandoc', '-s', "-f", "org", "--to", "markdown+hard_line_breaks", f"{org_path.absolute()}"], stdout=subprocess.PIPE)
+    with md_path.open('w') as f:
+        subprocess.run(['sed', r's/\\\[/\[/g;s/\\\]/\]/g;s/#org2mdissues#//g'], stdin=pandoc_result.stdout, stdout=f)
+
+def remove_org(path: Path) -> None:
+    path.unlink()
 
 from functools import lru_cache
+
+
 @lru_cache(1)
 def capture_config() -> Optional[Config]:
     cvar = os.environ.get(CAPTURE_CONFIG_VAR)
@@ -72,6 +84,9 @@ def capture(
     comment = safe(comment)
     tag_str = safe(tag_str)
 
+    obsidian_filename = comment + '.md'
+    md_path = Path(os.environ[OBSIDIAN_PATH_VAR]).expanduser() / obsidian_filename
+
     tags: List[str] = []
     if not empty(tag_str):
         tags = re.split(r'[\s,]', tag_str)
@@ -86,10 +101,12 @@ def capture(
         org_template=org_template,
         config=config,
     )
-    append_org(
+    write_org(
         path=capture_path,
         org=org,
     )
+    move_to_obsidian_vault(org_path=capture_path, md_path=md_path)
+    remove_org(path=capture_path)
 
     response = {
         'path': str(capture_path),
@@ -128,12 +145,13 @@ class GraspRequestHandler(BaseHTTPRequestHandler):
             self.respond_error(message=str(e))
 
 
-def run(port: str, capture_path: str, template: str, config: Optional[Path]):
+def run(port: str, capture_path: str, template: str, obsidian_path:str, config: Optional[Path]):
     logger = get_logger()
     logger.info("Using template %s", template)
 
     # not sure if there is a simpler way to communicate with the server...
     os.environ[CAPTURE_PATH_VAR] = capture_path
+    os.environ[OBSIDIAN_PATH_VAR] = obsidian_path
     os.environ[CAPTURE_TEMPLATE_VAR] = template
     if config is not None:
         os.environ[CAPTURE_CONFIG_VAR] = str(config)
@@ -148,6 +166,7 @@ def setup_parser(p):
     p.add_argument('--template', type=str, default=DEFAULT_TEMPLATE, help=f"""
     {as_org.__doc__}
     """)
+    p.add_argument('--obsidian-vault-path', type=str, default='~/vault', help='Directory with Obsidian vaults')
     abspath = lambda p: str(Path(p).absolute())
     p.add_argument('--config', type=abspath, required=False, help='Optional dynamic config')
 
@@ -158,7 +177,7 @@ def main():
     p = argparse.ArgumentParser('grasp server', formatter_class=lambda prog: argparse.ArgumentDefaultsHelpFormatter(prog, width=100)) # type: ignore
     setup_parser(p)
     args = p.parse_args()
-    run(args.port, args.path, args.template, args.config)
+    run(args.port, args.path, args.template, args.obsidian_vault_path, args.config)
 
 if __name__ == '__main__':
     main()
