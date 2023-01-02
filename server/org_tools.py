@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import List, Optional
 
-DEFAULT_TEMPLATE = "%:selection\n\nLinks: %:tags\n\n/Source: %:link @ %U/"
+DEFAULT_TEMPLATE = "%:selection\n\nLinks: %:tags\n\n---\n\n/Source: %:link @ %U/"
 
 # TODO reuse inorganic/orgparse??
 def date2org(t: datetime) -> str:
