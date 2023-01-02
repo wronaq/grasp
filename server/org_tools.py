@@ -1,12 +1,12 @@
-from datetime import datetime
 import re
+from datetime import datetime
 from typing import List, Optional
 
-DEFAULT_TEMPLATE = "* %U %:description %:tags\n%:link\n%:initial\n"
+DEFAULT_TEMPLATE = "%:selection\n\nLinks: %:tags\n\n/Source: %:link @ %U/"
 
 # TODO reuse inorganic/orgparse??
 def date2org(t: datetime) -> str:
-    return t.strftime("%Y-%m-%d %a")
+    return t.strftime("%Y-%m-%d")
 
 def datetime2orgtime(t: datetime) -> str:
     return t.strftime("%H:%M")
@@ -66,7 +66,7 @@ Additionally, supports :selection, :comment and :tags expansions.
 
 You can look at `test_templates` for some specific examples.
     """
-    py_template = re.sub(r'([^\\])%[:]?([?\w]+)', r'\1{\2}', org_template)
+    py_template = re.sub(r'%[:]?([?\w]+)', r'{\1}', org_template)
     # replace all escaped % with regular %, safe to do after substitution
     py_template = py_template.replace(r'\%', '%')
 
@@ -74,7 +74,7 @@ You can look at `test_templates` for some specific examples.
     org_date = date2org(NOW)
     org_datetime = datetime2org(NOW)
 
-    tags_s = '' if len(tags) == 0 else (':' + ':'.join(tags) + ':')
+    tags_s = '' if len(tags) == 0 else ', '.join([f'[#org2mdissues#[{tag}]]' for tag in tags])
 
     if config is None:
         config = DefaultConfig()
@@ -92,7 +92,7 @@ You can look at `test_templates` for some specific examples.
         t=f'<{org_date}>',
         u=f'[{org_date}]',
         T=f'<{org_datetime}>',
-        U=f'[{org_datetime}]',
+        U=f'{org_datetime}',
         description=title,
         link=url,
 
@@ -169,7 +169,7 @@ Selection:
 some
     selected
        text
-    
+
 Comment:
 fafewfewf
 '''.lstrip()
