@@ -1,5 +1,5 @@
 {
-  "name": "grasp",
+  "name": "grasp+obsidian",
   "version": "0.7.1",
   "version_name": "released on 2022.12.28",
   "description": "Reliably capture links and webpage content in a plaintext file (org-mode/markdown)",
@@ -15,7 +15,9 @@
     "release:cws": "chrome-webstore-upload",
     "release:amo": "web-ext-submit"
   },
-  "browserslist": ["defaults and supports es6-module"],
+  "browserslist": [
+    "defaults and supports es6-module"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/karlicoss/grasp.git"
