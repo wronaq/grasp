@@ -1,5 +1,5 @@
 /* @flow */
-import browser from "webextension-polyfill"
+import browser from "webextension-polyfill";
 
 
 export type Options = {
@@ -12,7 +12,7 @@ export type Options = {
 function defaultOptions(): Options {
     return {
         endpoint: "http://localhost:12212/capture",
-        default_tags: "grasp",
+        default_tags: "",
         notification: true,
     }
 }
@@ -20,7 +20,7 @@ function defaultOptions(): Options {
 
 export async function getOptions(): Promise<Options> {
     const res = await browser.storage.local.get(null)
-    return {...defaultOptions(), ...res}
+    return { ...defaultOptions(), ...res }
 }
 
 
