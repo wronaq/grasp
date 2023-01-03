@@ -84,7 +84,7 @@ def capture(
     comment = safe(comment)
     tag_str = safe(tag_str)
 
-    obsidian_filename = comment + '.md'
+    obsidian_filename = comment.split(".")[0] + '.md'
     md_path = Path(os.environ[OBSIDIAN_PATH_VAR]).expanduser() / obsidian_filename
 
     tags: List[str] = []
