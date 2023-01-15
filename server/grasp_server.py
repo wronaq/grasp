@@ -39,7 +39,7 @@ def move_to_obsidian_vault(org_path: Path, md_path: Path) -> None:
     md_path.parent.mkdir(parents=True, exist_ok=True)
     pandoc_result = subprocess.Popen(['pandoc', '-s', "-f", "org", "--to", "markdown+hard_line_breaks", f"{org_path.absolute()}"], stdout=subprocess.PIPE)
     with md_path.open('w') as f:
-        subprocess.run(['sed', r's/\\\[/\[/g;s/\\\]/\]/g;s/#org2mdissues#//g'], stdin=pandoc_result.stdout, stdout=f)
+        subprocess.run(['sed', r's/\\\[/\[/g;s/\\\]/\]/g;s/\\\#org2mdissues\\\#//g'], stdin=pandoc_result.stdout, stdout=f)
 
 def remove_org(path: Path) -> None:
     path.unlink()
