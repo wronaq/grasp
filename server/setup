@@ -5,6 +5,7 @@ import platform
 import shlex
 from pathlib import Path
 from subprocess import DEVNULL, check_call, run
+from typing import List
 
 from grasp_server import setup_parser
 
@@ -53,7 +54,7 @@ def systemd(*args, method=check_call):
     ])
 
 
-def get_command(args) -> list[str]:
+def get_command(args) -> List[str]:
     return [
         '--port', args.port,
         '--path', args.path,
@@ -65,7 +66,8 @@ def get_command(args) -> list[str]:
 
 def setup_systemd(args) -> None:
     args.template = args.template.replace('%', '%%').replace('\n', r'\n') # escape for systemd...
-    args.unit_name = args.unit_name.removesuffix('.service')  # legacy unit_name default had .service
+    # args.unit_name = args.unit_name.removesuffix('.service')  # legacy unit_name default had .service
+    args.unit_name = args.unit_name.split('.service')[0]  # legacy unit_name default had .service (python <= 3.8)
 
     base_path = '~/.config/systemd/user'
     if not Path(base_path).expanduser().is_dir():
